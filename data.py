@@ -32,7 +32,6 @@ class ClickAnnotation:
         """
         annotation_path = Path(annotation_path)
         self.annotators = {i: d for i, d in enumerate(annotation_path.iterdir()) if d.is_dir()}
-
         all_clicks = []
         for i, folder in self.annotators.items():
             df_clicks = file_loader(os.path.join(str(annotation_path.resolve()), folder, video_name), ret='dataframe')

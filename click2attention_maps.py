@@ -25,6 +25,7 @@ import numpy as np
 import cv2
 import numpy as np
 from tqdm import tqdm
+import scipy.stats
 from scipy.stats import multivariate_normal
 
 from data import VideoIterator, ClickAnnotation, file_loader
@@ -92,6 +93,29 @@ def gaussian_mixture(image_shape, points, sigma=1):
 
     return image
 
+def filter_outliers(points):
+    points = np.array(points)
+    x_values = points[:, 0]
+    y_values = points[:, 1]
+
+    def iqr_outliers(data):
+        Q1 = np.percentile(data, 25)
+        Q3 = np.percentile(data, 75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        return (data > lower_bound) | (data < upper_bound) # return negative outliers
+    def zscore_outliers(data):
+        z_scores = scipy.stats.zscore(data)
+        return np.abs(z_scores) < 1.5
+
+    x_outliers = zscore_outliers(x_values)
+    y_outliers = zscore_outliers(y_values)
+
+    # Mark points as outliers if they are outliers in either dimension
+    outlier_mask = x_outliers & y_outliers
+    return points[outlier_mask]
+
 def save_worker(queue: Queue, save_dir: str, num_threads: int):
     os.makedirs(save_dir, exist_ok=True)
 
@@ -139,6 +163,7 @@ def video_attention_maps(all=False):
 
             pbar = tqdm(total=len(annotations), desc=f'video: {video_name}')
             for i, ann in enumerate(annotations, start=1):
+                ann = filter_outliers(ann)
                 heatmap = gaussian_mixture((video.height, video.width), ann, sigma)
                 queue.put((i, heatmap))
                 pbar.update(1)
@@ -155,6 +180,7 @@ def video_attention_maps(all=False):
         out = cv2.VideoWriter('attention_maps.mp4', fourcc, video.fps//2, (video.width * 2, video.height))
 
         for i, ann in enumerate(annotations, start=1):
+            ann = filter_outliers(ann)
             if i % 2 == 0:
                 continue
             print(f'Generating attention map for frame {i}')
@@ -202,7 +228,7 @@ class Render:
         # heatmap = gaussian_mixture((self.video.height, self.video.width), self.annotations[click_frame], self.att_map_sigma)
         # draw points
         point_masks = np.zeros((self.video.height, self.video.width, 3), dtype=np.uint8)
-        for i, point in enumerate(self.annotations[click_frame]):
+        for i, point in enumerate(filter_outliers(self.annotations[click_frame])):
             if np.isnan(point).any():
                 continue
             point = list(map(int, point))
@@ -215,7 +241,7 @@ class Render:
         return point_masks
     
     def attention_map(self, click_frame, show=False):
-        gaussian = gaussian_mixture((self.video.height, self.video.width), self.annotations[click_frame], self.att_map_sigma)
+        gaussian = gaussian_mixture((self.video.height, self.video.width), filter_outliers(self.annotations[click_frame]), self.att_map_sigma)
 
         if show:
             cv2.imshow('heatmap', gaussian)
@@ -252,7 +278,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     if args.plot_click > 0:
-        render = Render()
+        render = Render(interpolate=True)
         render.render_all(args.plot_click)
     else:
         video_attention_maps(args.all)
