@@ -30,9 +30,13 @@ from scipy.stats import multivariate_normal
 from data import VideoIterator, ClickAnnotation, file_loader
 
 class PATHS:
-    video_path = '/run/media/suayder/data/JBCS_paper/click/Jundiai_HSV#Block01-2024-02-28-15-06-34-538/video.mp4'
-    annotation_path = '/run/media/suayder/data/JBCS_paper/click/clicks/'
+    # preciso criar uma forma de atualizar o path do video tambem conforme demanda, tem algumas decisões de design a serem feitas, por exemplo devo considerar a hierarquia atual dos videos? ou devo criar minha propria regra
+    #fazer commit e depois fazer pull na rede vision, mudar os paths e rodar o script para gerar 
+    #enquanto isso vou organizando os codigos de treinamento, separando os videos em frames, etc
+    
     video_name = 'Block01-2024-02-28-15-06-34-538'
+    video_path = f'/run/media/suayder/data/JBCS_paper/ds1/videos/{video_name}/video.mp4'
+    annotation_path = '/run/media/suayder/data/JBCS_paper/ds1/clicks/'
     save_dirs = './attention_maps'
 
     # load clicks from path
@@ -46,6 +50,11 @@ class PATHS:
         
         return all_clicks
     
+    def set_video_name(cls, new_name):
+        cls.video_path = cls.video_path.replace(cls.video_name, new_name)
+        cls.video_name = new_name
+
+
     @classmethod
     def user_names(cls):
         return [f for f in os.listdir(cls.annotation_path) if os.path.isdir(os.path.join(cls.annotation_path, f))]
@@ -116,14 +125,12 @@ def video_attention_maps(all=False):
 
     sigma=120
 
-    attention_maps = []
-    video = VideoIterator(PATHS.video_path)
-    annotations = ClickAnnotation(PATHS.annotation_path, PATHS.video_name ,interpolate=True, sequence_length=video.num_frames+1)
-
     if all:
         video_names = PATHS.video_names()
         for video_name in video_names:
-            annotations = ClickAnnotation(PATHS.annotation_path, video_name, interpolate=True, sequence_length=video.num_frames+1)
+            PATHS.set_video_name(PATHS, video_name)
+            video = VideoIterator(PATHS.video_path)
+            annotations = ClickAnnotation(PATHS.annotation_path, PATHS.video_name ,interpolate=True, sequence_length=video.num_frames+1)
             save_dir = os.path.join(PATHS.save_dirs, video_name)
             
             queue = multiprocessing.Queue(maxsize=30)
@@ -140,6 +147,9 @@ def video_attention_maps(all=False):
             pbar.close()
 
     else:
+        video = VideoIterator(PATHS.video_path)
+        annotations = ClickAnnotation(PATHS.annotation_path, PATHS.video_name ,interpolate=True, sequence_length=video.num_frames+1)
+
         render = Render(interpolate=True)
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') # change this to mp4
         out = cv2.VideoWriter('attention_maps.mp4', fourcc, video.fps//2, (video.width * 2, video.height))
@@ -150,12 +160,10 @@ def video_attention_maps(all=False):
             print(f'Generating attention map for frame {i}')
             heatmap = render.render_all(i, show=False)
             out.write(heatmap)
-
+ 
         out.release()
         cv2.destroyAllWindows()
 
-
-    return attention_maps
 
 class Render:
     def __init__(self, clicks_path=PATHS.annotation_path, video_path=PATHS.video_path, video_name=PATHS.video_name, **kwargs):
