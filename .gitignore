@@ -4,3 +4,6 @@
 # Misc
 *.log
 *.swp
+./results
+./attention_maps
+./checkpoints
