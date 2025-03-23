@@ -31,14 +31,11 @@ from scipy.stats import multivariate_normal
 from data import VideoIterator, ClickAnnotation, file_loader
 
 class PATHS:
-    # preciso criar uma forma de atualizar o path do video tambem conforme demanda, tem algumas decisões de design a serem feitas, por exemplo devo considerar a hierarquia atual dos videos? ou devo criar minha propria regra
-    #fazer commit e depois fazer pull na rede vision, mudar os paths e rodar o script para gerar 
-    #enquanto isso vou organizando os codigos de treinamento, separando os videos em frames, etc
     
     video_name = 'Block01-2024-02-28-15-06-34-538'
-    video_path = f'/run/media/suayder/data/JBCS_paper/ds1/videos/{video_name}/video.mp4'
-    annotation_path = '/run/media/suayder/data/JBCS_paper/ds1/clicks/'
-    save_dirs = './attention_maps'
+    video_path = f'/scratch/suayder/jbcs_ds1/videos/{video_name}/video.mp4'
+    annotation_path = '/scratch/suayder/jbcs_ds1/clicks/'
+    save_dirs = '/scratch/suayder/jbcs_ds1/maps/'
 
     # load clicks from path
     @classmethod
@@ -122,7 +119,7 @@ def save_worker(queue: Queue, save_dir: str, num_threads: int):
     batch_size = 10
     def save_file(data):
         index, heatmap = data
-        np.save(os.path.join(save_dir, f'{index}.npy'), heatmap)
+        cv2.imwrite(os.path.join(save_dir, f'{str(index).zfill(5)}.jpg'), heatmap)
 
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         buffer = []  # Buffer to store batch data
@@ -212,7 +209,7 @@ class Render:
         Generate random colors (RGB).
         """
         return [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for _ in range(num_colors)]
-    
+
     @staticmethod
     def plot_map_on_frame(input_prob, frame):
 
@@ -261,13 +258,6 @@ class Render:
             cv2.waitKey(0)
         else:
             return frame
-
-# video_points = [[ j ] + click_point for j, click_point in enumerate(annotation)]
-# with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
-#     p.starmap(gen_gaussians_and_save, [(p, (video.height, video.width), save_dir) for p in video_points])
-
-# print(f'[{i+1} / {ds.size}] Done - Instance name: {vid_instance.instance_name}')
-# break
 
 
 if __name__=='__main__':
