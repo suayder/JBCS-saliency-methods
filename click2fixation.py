@@ -96,26 +96,21 @@ def filter_outliers(points):
     outlier_mask = x_outliers & y_outliers
     return points[outlier_mask]
 
-def gen_fixation(image_shape, points, sigma=1):
-
-    height, width = image_shape
+def gen_fixation(image_shape, points):
     image = np.zeros(image_shape, dtype='uint8')
-    image2 = np.zeros(image_shape, dtype='uint8')
     for point in points:
         if np.isnan(point).any():
             continue
-        image[point[0], point[1]] = 1
-        image2 = cv2.circle(image2, )
-    
+        image[min(point[0], image_shape[0])-1, min(point[1], image_shape[1])-1] = 255
     return image
-    
+
 def save_fixation():
     
     video_names = PATHS.video_names()
     for video_name in video_names:
         PATHS.set_video_name(PATHS, video_name)
         video = VideoIterator(PATHS.video_path)
-        annotations = ClickAnnotation(PATHS.annotation_path, PATHS.video_name ,interpolate=True, sequence_length=video.num_frames+1)
+        annotations = ClickAnnotation(PATHS.annotation_path, PATHS.video_name, interpolate=True, sequence_length=video.num_frames+1)
         save_dir = os.path.join(PATHS.save_dirs, video_name)
 
 
@@ -123,46 +118,15 @@ def save_fixation():
         save_process = multiprocessing.Process(target=save_worker, args=(queue, save_dir, 10))
         save_process.start()
 
-            pbar = tqdm(total=len(annotations), desc=f'video: {video_name}')
-            for i, ann in enumerate(annotations, start=1):
-                ann = filter_outliers(ann)
-                fixation = gen_fixation((video.height, video.width), ann, sigma)
-                queue.put((i, heatmap))
-                pbar.update(1)
-            queue.put(None)
-            save_process.join()
-            pbar.close()
+        pbar = tqdm(total=len(annotations), desc=f'video: {video_name}')
+        for i, ann in enumerate(annotations, start=1):
+            ann = filter_outliers(ann)
+            fixation = gen_fixation((video.height, video.width), ann)
+            queue.put((i, fixation))
+            pbar.update(1)
+        queue.put(None)
+        save_process.join()
+        pbar.close()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+save_fixation()
