@@ -10,14 +10,21 @@ Models references:
 
 ## Dataset
 
-| VIDEO-ID | FRAMES |
-| -------- | ------ |
-| Jundiai_HSV#Block01-2024-02-28-15-06-34-538 | 1200 |
-| Jundiai_HSV#Route01-2024-02-28-14-15-07-770 | 1200 |
-| Jundiai_HSV#Route02-2024-02-28-14-50-03-491 | 2090 |
-| Santos_HM#Block01-2024-03-07-14-18-22-116 | 9644 |
-| SaoPaulo_HC#Route02-2024-03-17-16-17-27-328 | 1200 |
-| Total | 15334 |
+**Table: Total duration in seconds and total number of frames for each video sample extracted from the dataset, evaluated using human attention and tactile paving methods.**
+
+| ID           | Duration (Human attention) | Frames (Human attention) | Duration (Tactile paving) | Frames (Tactile paving) |
+|--------------|----------------------------|---------------------------|----------------------------|--------------------------|
+| J-HSV-B01    | 241.94                     | 7,259                     | 241.94                     | 7,259                    |
+| J-HSV-R01    | -                          | -                         | 139.82                     | 4,195                    |
+| J-HSV-R02    | -                          | -                         | 69.66                      | 2,090                    |
+| S-CHE-B01    | 330.32                     | 9,910                     | -                          | -                        |
+| S-HM-B01     | 321.43                     | 9,644                     | 321.43                     | 9,644                    |
+| SP-HC-R01    | 239.77                     | 7,194                     | -                          | -                        |
+| SP-HC-R02    | 689.88                     | 20,680                    | 40.00                      | 1,200                    |
+| SP-HU-R01    | 190.71                     | 5,722                     | -                          | -                        |
+| SP-HU-R02    | 151.08                     | 4,533                     | -                          | -                        |
+| **All**      | **2,165.13**               | **64,942**                | **812.85**                 | **23,388**               |
+
 
 
 ## evaluation
