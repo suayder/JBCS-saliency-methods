@@ -9,7 +9,7 @@ Models references:
 
 ## DEMO
 
-[![](assets/first_page.png)](https://drive.google.com/file/d/1uu8SYy7bGynw_uUn8AqyvbZ8MrWP1_lE/view?usp=drive_link)
+[![](assets/first_page.png)](https://drive.google.com/file/d/1fe7JgEsmDxfiSc1JlJBSFe1ezeB4KgNb/view?usp=drive_link)
 
 ## Dataset
 
