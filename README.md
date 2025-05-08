@@ -16,6 +16,10 @@ To train the models we used the original implementations:
 - TMFI-Net - https://github.com/wusonghe/TMFI-Net
 - STSANet - https://github.com/WZq975/STSANet
 
+### Annotation
+
+For this project an annotation tool was developed, it can be found at https://github.com/suayder/VideoClickCapture
+
 ## Scripts
 
 ### Human-based click processing
