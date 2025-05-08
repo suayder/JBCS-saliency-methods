@@ -1,24 +1,29 @@
 import os
 import argparse
-import random
 from queue import Queue
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-import cv2
-import numpy as np
 from tqdm import tqdm
+import yaml
 import scipy.stats
-from scipy.stats import multivariate_normal
 
 from data import VideoIterator, ClickAnnotation, file_loader
 
 class PATHS:
-    
-    video_name = 'Block01-2024-02-28-15-06-34-538'
-    video_path = f'/scratch/suayder/jbcs_ds1/videos/{video_name}/video.mp4'
-    annotation_path = '/scratch/suayder/jbcs_ds1/clicks/'
-    save_dirs = '/scratch/suayder/jbcs_ds1/fixations/'
+
+    config_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "config.yaml")
+
+    @classmethod
+    def load_config(cls):
+        """Load paths from YAML file"""
+        with open(cls.config_path, "r") as file:
+            config = yaml.safe_load(file)
+
+        cls.video_name = config["video_name"]
+        cls.video_path = config["video_path"].format(video_name=cls.video_name)
+        cls.annotation_path = config["annotation_path"]
+        cls.save_dirs = config["save_dirs"].format(video_name=cls.video_name)
 
     # load clicks from path
     @classmethod
@@ -43,6 +48,8 @@ class PATHS:
     @classmethod
     def video_names(cls):
         return [f for f in os.listdir(os.path.join(cls.annotation_path, cls.user_names()[0])) if os.path.isdir(os.path.join(cls.annotation_path, cls.user_names()[0], f))]
+
+PATHS.load_config()
 
 def save_worker(queue: Queue, save_dir: str, num_threads: int):
     os.makedirs(save_dir, exist_ok=True)
@@ -104,15 +111,15 @@ def gen_fixation(image_shape, points):
         image[min(point[0], image_shape[0])-1, min(point[1], image_shape[1])-1] = 255
     return image
 
-def save_fixation():
+def save_fixation(args):
     
-    video_names = PATHS.video_names()
+    video_names = PATHS.video_names() if args.all else [PATHS.video_name]
     for video_name in video_names:
         PATHS.set_video_name(PATHS, video_name)
         video = VideoIterator(PATHS.video_path)
         annotations = ClickAnnotation(PATHS.annotation_path, PATHS.video_name, interpolate=True, sequence_length=video.num_frames+1)
         save_dir = os.path.join(PATHS.save_dirs, video_name)
-
+        
 
         queue = multiprocessing.Queue(maxsize=600)
         save_process = multiprocessing.Process(target=save_worker, args=(queue, save_dir, 10))
@@ -129,4 +136,20 @@ def save_fixation():
         pbar.close()
 
 
-save_fixation()
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--video-path', default=PATHS.video_path)
+    parser.add_argument('--video-name', default=PATHS.video_name)
+    parser.add_argument('--annotation-path', default=PATHS.annotation_path)
+    parser.add_argument('--save-dirs', default=PATHS.save_dirs)
+    parser.add_argument('--all', action='store_true',default=False)
+    args = parser.parse_args()
+
+    PATHS.video_path = args.video_path
+    PATHS.annotation_path = args.annotation_path
+    PATHS.save_dirs = args.save_dirs
+    PATHS.video_name = args.video_name
+    save_fixation(args)
+
+main()

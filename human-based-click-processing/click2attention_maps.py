@@ -23,19 +23,29 @@ import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import cv2
-import numpy as np
 from tqdm import tqdm
+import yaml
 import scipy.stats
 from scipy.stats import multivariate_normal
 
 from data import VideoIterator, ClickAnnotation, file_loader
 
+SIGMA = 80
+
 class PATHS:
     
-    video_name = 'Block01-2024-02-28-15-06-34-538'
-    video_path = f'/scratch/suayder/jbcs_ds1/videos/{video_name}/video.mp4'
-    annotation_path = '/scratch/suayder/jbcs_ds1/clicks/'
-    save_dirs = '/scratch/suayder/jbcs_ds1/maps/'
+    config_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "config.yaml")
+
+    @classmethod
+    def load_config(cls):
+        """Load paths from YAML file"""
+        with open(cls.config_path, "r") as file:
+            config = yaml.safe_load(file)
+
+        cls.video_name = config["video_name"]
+        cls.video_path = config["video_path"].format(video_name=cls.video_name)
+        cls.annotation_path = config["annotation_path"]
+        cls.save_dirs = config["save_dirs"].format(video_name=cls.video_name)
 
     # load clicks from path
     @classmethod
@@ -60,6 +70,8 @@ class PATHS:
     @classmethod
     def video_names(cls):
         return [f for f in os.listdir(os.path.join(cls.annotation_path, cls.user_names()[0])) if os.path.isdir(os.path.join(cls.annotation_path, cls.user_names()[0], f))]
+
+PATHS.load_config()
 
 def gaussian_mixture(image_shape, points, sigma=1):
     """
@@ -144,7 +156,7 @@ def save_worker(queue: Queue, save_dir: str, num_threads: int):
 
 def video_attention_maps(all=False):
 
-    sigma=120
+    sigma=SIGMA
 
     if all:
         video_names = PATHS.video_names()
@@ -176,12 +188,10 @@ def video_attention_maps(all=False):
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') # change this to mp4
         out = cv2.VideoWriter('attention_maps.mp4', fourcc, video.fps//2, (video.width * 2, video.height))
 
-        for i, ann in enumerate(annotations, start=1):
+        for i, ann in enumerate(tqdm(annotations), start=1):
             ann = filter_outliers(ann)
-            if i % 2 == 0:
-                continue
-            print(f'Generating attention map for frame {i}')
             heatmap = render.render_all(i, show=False)
+            cv2.imwrite(os.path.join(PATHS.save_dirs, f'{str(i).zfill(5)}.jpg'), render.attention_map(i))
             out.write(heatmap)
  
         out.release()
@@ -201,7 +211,7 @@ class Render:
         interpolate = kwargs.get('interpolate', False)
         self.annotations = ClickAnnotation(clicks_path, video_name ,interpolate=interpolate, sequence_length=self.video.num_frames+1)
         self.colors = {i: col for i, col in enumerate(self.random_colors(len(self.annotations.annotators)))}
-        self.att_map_sigma = 120
+        self.att_map_sigma = SIGMA
     
     @staticmethod
     def random_colors(num_colors):
@@ -229,7 +239,7 @@ class Render:
             if np.isnan(point).any():
                 continue
             point = list(map(int, point))
-            point_masks = cv2.circle(point_masks, (point[0], point[1]), 5, self.colors[i], -1)
+            point_masks = cv2.circle(point_masks, (point[0], point[1]), 15, self.colors[i], -1)
 
         if show:
             cv2.imshow('points in the mask', point_masks)
@@ -250,9 +260,11 @@ class Render:
         heatmap = self.attention_map(click_frame)
         point_masks = self.attention_point(click_frame)
         frame = self.video.frame(click_frame)
-        frame = self.plot_map_on_frame(heatmap, frame)
-        heatmap = 255-cv2.merge((heatmap, heatmap, heatmap))
-        frame = np.concatenate((frame, point_masks), axis=1)
+        # frame = self.plot_map_on_frame(heatmap, frame)
+        heatmap = cv2.merge((heatmap, heatmap, heatmap))
+        div = np.ones((self.video.height, 10, 3), dtype=np.uint8)*255
+        frame = np.concatenate((frame, div, point_masks, div, heatmap), axis=1)
+        frame = cv2.resize(frame, (frame.shape[1]//2, frame.shape[0]//2))
         if show:
             cv2.imshow('frame', frame)
             cv2.waitKey(0)
