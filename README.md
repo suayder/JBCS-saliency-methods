@@ -30,13 +30,13 @@ Attention maps is the density map that is used for training. Fixation maps is on
 
 ### Cropping
 
-- There are two cropping scripts 
+- There are two cropping scripts `cropping_app.py` ans `crop_interpolated.py`
+- `cropping_app.py` just maximizes the attention inside the frame given the expected desired final dimmentions
+- `crop_interpolated.py` maximizes and interpolate the frames to make the transition between the frames smoothed
 - The parameters and paths are changed inside each script
 - The aspect ratios for reframing is configured in the constant variables in the beggining of the code
 - Both receive the input folder with images and the folder with the attention maps to serve as reference to the cropping
 - The outputs are the corresponding cropped images saved in an output folder (configured in the parameters)
-- `cropping_app.py` just maximizes the attention inside the frame given the expected desired final dimmentions
-- `crop_interpolated.py` maximizes and interpolate the frames to make the transition between the frames smoothed
 
 ### Other scripts
 
