@@ -1,4 +1,4 @@
-# JBCS-video-saliency [REPO UNDER CONSTRUCTION]
+# JBCS-video-saliency
 
 **Salience prediction methods for video cropping in sidewalk footage**
 
@@ -22,6 +22,10 @@ For this project an annotation tool was developed, it can be found at https://gi
 
 ## Scripts
 
+To run the scripts we used python==3.10.15 and torch==2.1.0+cu121 in the environment.
+
+install the dependencies in  `requeriments.txt`
+
 ### Human-based click processing
 
 #### Generate attention maps and fixation maps
@@ -31,6 +35,16 @@ Attention maps is the density map that is used for training. Fixation maps is on
 - Modify the paths in `config.yaml`
 - Run `human-based-click-processing/click2attention_maps.py`, pay attention to the argparse argument. You are able to renderize and a single click as argument or you generate all attention maps if in a folder structure described in the begining of the script file.
 - Run `human-based-click-processing/click2fixation.py`, again, pay attention to the arguments in the scripts.
+
+
+### Tactile-based click processing
+
+Coonsidering you have the clicks in the tactile, the following scripts are provided:
+
+- `tactile-based-click-processing/tactile_segmentation.ipynb`, this notebook runs SAM2 model and generate the segmentation masks for tactiles using the given clicks as prompts. See the instructions inside the notebook.
+- `tactile-based-click-processing/pseudo_label_generator.ipynb` will leverage the segmentation masks to generate the final attention maps. Pay attention to the dataloader, originally it uses sideseeing_tools but the most recent versions of the dataset are no more using it, so you can change the class `InstancePaths`. Adapt it to your needs.
+- Also in `tactile-based-click-processing/scripts` there are three scripts to plot the clicks, maps and mask. It helps during the development for visualization and debuging.
+
 
 ### Cropping
 
@@ -49,6 +63,12 @@ There are some adicional scripts used to help during the development
 - `single_image_procedure.ipynb` exemplifies the creation of a single attention map for **tactile paving**
 - `data.py` contains some classes to help in data loading, for instance you can easily iterate over videos or generated clicks.
 
+
+generate clicks
+
+generate segmentation from SAM2 model
+
+generate points of interest (in case of this paper, curves)
 
 ## evaluation
 
